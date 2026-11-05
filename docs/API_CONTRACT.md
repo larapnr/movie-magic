@@ -2,7 +2,7 @@
 
 Base URL (local): http://localhost:8000
 Responses for TMDb backed endpoints pass the TMDb JSON through unchanged.
-Protected endpoints need the header `Authorization: Bearer <Firebase ID token>`.
+Protected endpoints need the header `Authorization: Bearer <token>`: a Firebase ID token, or in local mode (no Firebase) the token returned by `/api/auth/login` or `/api/auth/signup`.
 
 ## Public
 
@@ -10,7 +10,7 @@ Protected endpoints need the header `Authorization: Bearer <Firebase ID token>`.
 | --- | --- | --- | --- |
 | GET | /api/health | | `{"status": "ok"}` |
 | GET | /api/search | q, type (multi, movie, tv), page | Title search |
-| GET | /api/discover | type, genre (comma ids), year, sort_by, page | Filters |
+| GET | /api/discover | type, genre (comma ids), year, sort_by, page | Filters. `vote_average.*` sorts only include titles with 200+ votes |
 | GET | /api/genres | type | Genre id to name list |
 | GET | /api/media/{movie or tv}/{id} | | Details with credits, videos, watch/providers, recommendations |
 | GET | /api/trending | window (day, week) | Movies and TV |
@@ -21,6 +21,17 @@ Protected endpoints need the header `Authorization: Bearer <Firebase ID token>`.
 | GET | /api/reviews/{type}/{id}/summary | | `{"average": 4.2, "count": 7}` |
 | GET | /api/recommendations/genre | genre, type | Genre based suggestions |
 | GET | /api/trailer-search | q | Returns 501 until implemented |
+
+## Accounts (local mode)
+
+| Method | Path | Body | Notes |
+| --- | --- | --- | --- |
+| GET | /api/auth/mode | | `{"mode": "local"}` or `{"mode": "firebase"}` |
+| POST | /api/auth/signup | `{email, password (6+ chars), display_name?}` | 201 `{token, user}`. 409 if the email exists. 400 in Firebase mode |
+| POST | /api/auth/login | `{email, password}` | `{token, user}`. 401 wrong email or password. 400 in Firebase mode |
+| GET | /api/auth/me | | Protected. `{uid, email, display_name}` |
+
+`user` is `{uid, email, display_name}`. Tokens expire after `AUTH_TOKEN_DAYS` (default 30).
 
 ## Protected
 

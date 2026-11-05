@@ -26,9 +26,11 @@ async def discover(
 ):
     """Filter by genre (comma separated ids) and release year."""
     year_key = "primary_release_year" if type == MediaType.movie else "first_air_date_year"
+    # Rating sorts are meaningless for titles with a handful of votes, so require a minimum.
+    min_votes = 200 if sort_by.startswith("vote_average") else None
     return await tmdb_get(
         f"/discover/{type.value}",
-        {"with_genres": genre, year_key: year, "sort_by": sort_by, "page": page},
+        {"with_genres": genre, year_key: year, "sort_by": sort_by, "page": page, "vote_count.gte": min_votes},
     )
 
 

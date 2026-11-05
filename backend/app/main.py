@@ -7,6 +7,7 @@ from slowapi.util import get_remote_address
 
 from .config import settings
 from .routers import (
+    account,
     details,
     favorites,
     recommendations,
@@ -31,7 +32,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for r in (search, details, trending, yolo, reviews, favorites, recommendations, trailer_search):
+for r in (account, search, details, trending, yolo, reviews, favorites, recommendations, trailer_search):
     app.include_router(r.router)
 
 

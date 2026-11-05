@@ -24,3 +24,7 @@ dist/
 
 # macOS
 .DS_Store
+
+# Local mode database (backend/movie_magic.db)
+*.db
+*.db-journal

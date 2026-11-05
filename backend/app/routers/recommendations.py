@@ -1,11 +1,9 @@
 from collections import Counter
 
 from fastapi import APIRouter, Depends, HTTPException
-from google.cloud.firestore_v1.base_query import FieldFilter
-
 from ..auth import current_user
-from ..db import get_db
 from ..models import MediaType
+from ..store import get_store
 from ..services.tmdb import tmdb_get
 
 router = APIRouter(prefix="/api/recommendations", tags=["recommendations"])
@@ -28,16 +26,9 @@ async def for_user(type: MediaType = MediaType.movie, user: dict = Depends(curre
     highly rated titles from their top genres. Replace with something smarter later.
     Sentiment based recommendations (step 3) would plug in here as an extra signal.
     """
-    docs = (
-        get_db()
-        .collection("saved_items")
-        .where(filter=FieldFilter("uid", "==", user["uid"]))
-        .stream()
-    )
     counts: Counter = Counter()
     seen: set[int] = set()
-    for d in docs:
-        item = d.to_dict()
+    for item in get_store().saved_items(user["uid"]):
         seen.add(item["tmdb_id"])
         counts.update(item.get("genre_ids", []))
 

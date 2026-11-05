@@ -4,6 +4,8 @@ A website for discovering movies and TV shows, viewing details, writing reviews,
 
 **Stack:** React (Vite) + Tailwind CSS, Python FastAPI, Firebase Authentication, Cloud Firestore.
 
+> **Firebase is optional for local development.** Without it the app runs in **local mode**: accounts, reviews and lists are stored in a SQLite file by the backend. See [Local mode (no Firebase)](#local-mode-no-firebase).
+
 ## Contents
 
 - [Features](#features)
@@ -47,13 +49,13 @@ Install these before you start:
 | --- | --- | --- |
 | Git | any recent | `git --version` |
 | Python | 3.10 or newer | `python3 --version` |
-| Node.js | 20 or newer recommended (Vite 5 needs at least 18) | `node --version` |
+| Node.js | 20 or newer (Tailwind CSS 4's native build needs it) | `node --version` |
 | npm | comes with Node | `npm --version` |
 
 You also need:
 
 - A **TMDb account** with an API key.
-- Access to the team's **Firebase project**, or your own Firebase project for local testing.
+- Optional: access to the team's **Firebase project**, or your own. Not needed in local mode.
 
 ## Setup
 
@@ -70,7 +72,9 @@ cd movie-magic
 2. Go to **Settings > API** (https://www.themoviedb.org/settings/api) and request an API key.
 3. Copy either the **API Key** (short, v3) or the **API Read Access Token** (long, v4). The backend accepts both.
 
-### 3. Set up Firebase
+### 3. Set up Firebase (optional)
+
+Skip this step to use [local mode](#local-mode-no-firebase).
 
 If the team already has a Firebase project, ask the project owner to add you, then skip to the parts you need.
 
@@ -100,6 +104,9 @@ Open `backend/.env` and fill it in:
 | `FIREBASE_SERVICE_ACCOUNT` | Path to the service account file, or the raw JSON string | `./serviceAccountKey.json` |
 | `ALLOWED_ORIGINS` | Comma separated frontend URLs allowed by CORS | `http://localhost:5173` |
 | `CACHE_TTL_SECONDS` | How long to cache TMDb responses | `300` |
+| `AUTH_MODE` | `auto` (default), `firebase` or `local` | `auto` |
+| `LOCAL_DB_PATH` | SQLite file used in local mode | `./movie_magic.db` |
+| `AUTH_SECRET` | Optional secret for local login tokens. Empty = generated and stored in the DB | |
 
 ### 5. Frontend
 
@@ -109,7 +116,7 @@ npm install
 cp .env.example .env             # Windows: copy .env.example .env
 ```
 
-Open `frontend/.env` and fill it in with the Firebase web config from step 3.4:
+Open `frontend/.env`. Leave the `VITE_FIREBASE_*` values empty for local mode, or fill them in with the Firebase web config from step 3.4:
 
 | Variable | Firebase config field |
 | --- | --- |
@@ -120,6 +127,15 @@ Open `frontend/.env` and fill it in with the Firebase web config from step 3.4:
 | `VITE_FIREBASE_STORAGE_BUCKET` | `storageBucket` |
 | `VITE_FIREBASE_MESSAGING_SENDER_ID` | `messagingSenderId` |
 | `VITE_FIREBASE_APP_ID` | `appId` |
+
+## Local mode (no Firebase)
+
+Every feature works without Firebase:
+
+- **Backend:** with `AUTH_MODE=auto`, the backend uses Firebase only when `FIREBASE_SERVICE_ACCOUNT` is raw JSON or points to a file that exists. Otherwise it uses local mode: email/password accounts (PBKDF2 hashed passwords, HMAC signed tokens), reviews and lists go into the SQLite file at `LOCAL_DB_PATH`. `GET /api/auth/mode` shows which mode is active.
+- **Frontend:** uses Firebase sign-in only when `VITE_FIREBASE_API_KEY` is set, otherwise local sign-in through `/api/auth/*`. Google sign-in is only offered with Firebase.
+- Frontend and backend must use the same mode. Configure Firebase in both or in neither.
+- Local data lives only in `backend/movie_magic.db` (gitignored). Delete the file to start fresh.
 
 ## Running the app
 
@@ -140,6 +156,7 @@ uvicorn app.main:app --reload --port 8000
 
 ```bash
 cd frontend
+nvm use 20                       # if your default Node is older
 npm run dev
 ```
 
@@ -152,7 +169,7 @@ cd backend
 pytest
 ```
 
-The tests do not need TMDb or Firebase credentials.
+The tests do not need TMDb or Firebase credentials. `tests/test_local_mode.py` covers local accounts, reviews, lists and recommendations against a temporary SQLite file.
 
 **Frontend production build:**
 
@@ -168,22 +185,25 @@ npm run preview    # serves the build locally
 movie-magic/
   frontend/                 React + Vite frontend
     src/
-      api/client.js         Axios client, one function per endpoint, attaches the Firebase token
-      components/           Navbar, Footer, MediaCard, MediaRow, ProtectedRoute
-      context/              AuthContext (Firebase Auth: email/password and Google)
-      pages/                Home, Search, Detail, Login, MyLists, Yolo
+      api/client.js         Axios client, one function per endpoint, attaches the auth token
+      components/           Navbar, Footer, MediaCard, MediaRow (row + grid), Reviews, ProtectedRoute, ui (stars, buttons, skeletons)
+      context/              AuthContext (Firebase or local sign-in), ToastContext
+      hooks.js              useGenres, useLists and small helpers
+      pages/                Home, Browse, Search, Detail, Login, MyLists, Yolo, SceneFinder, NotFound
       mocks/                Saved JSON responses for building before the backend is ready
-      firebase.js           Firebase web app setup
+      firebase.js           Firebase web app setup (skipped when VITE_FIREBASE_API_KEY is empty)
   backend/                  FastAPI backend
     app/
       main.py               App, CORS, rate limiting (120 requests/minute per IP), router registration
       config.py             Settings from environment variables
-      auth.py               Firebase ID token verification dependency
+      auth.py               Token verification dependency (Firebase ID token or local token)
       db.py                 Firebase Admin and Firestore setup
+      store.py              Storage layer: FirestoreStore or SqliteStore (local mode)
+      local_auth.py         Local mode password hashing and signed tokens
       models.py             Request models and enums
       services/             tmdb.py (cached TMDb client), cache.py
-      routers/              search, details, trending, yolo, reviews, favorites,
-                            recommendations, trailer_search
+      routers/              account (local sign-in), search, details, trending, yolo, reviews,
+                            favorites, recommendations, trailer_search
     tests/                  pytest tests
   docs/API_CONTRACT.md      Endpoints and response shapes
 ```
@@ -192,12 +212,14 @@ movie-magic/
 
 | Path | Page | Sign-in needed |
 | --- | --- | --- |
-| `/` | Home: trending, popular, upcoming | No |
-| `/search` | Search with result cards | No |
-| `/:mediaType/:id` | Title details (`/movie/603`, `/tv/1399`) | No |
-| `/yolo` | Random title with trailer | No |
+| `/` | Home: hero, trending (today/week), popular (movies/TV), coming soon, top rated by genre, "For you" row | No |
+| `/browse` | Discover with genre, year and sort filters, load more | No |
+| `/search` | Search with All/Movies/TV tabs, load more | No |
+| `/:mediaType/:id` | Title details (`/movie/603`, `/tv/1399`): cast, crew, trailer, where to watch, list buttons, community reviews | No (saving and reviewing need sign-in) |
+| `/yolo` | Random title with trailer, by type and genre | No |
+| `/scene-finder` | Scene level trailer search (shows "coming soon" while the backend returns 501) | No |
 | `/login` | Sign up and sign in | No |
-| `/my-lists` | Favorites, watchlist, watched | Yes |
+| `/my-lists` | Favorites, watchlist, watched, and "For you" recommendations | Yes |
 
 ## API
 
@@ -213,7 +235,7 @@ Responses for TMDb backed endpoints pass the TMDb JSON through unchanged.
 
 ## Database
 
-The app uses **Google Cloud Firestore** for its data. There is no SQLite, PostgreSQL, or other local database, and no database file is created on your machine.
+With Firebase configured, the app uses **Google Cloud Firestore** for its data, as described below. In [local mode](#local-mode-no-firebase), the same records are stored in a SQLite file (`backend/movie_magic.db`, tables `users`, `reviews`, `saved_items`) with the same fields.
 
 | What | Where it is stored |
 | --- | --- |
@@ -304,11 +326,10 @@ Add each person's name before starting.
 
 ## Known gaps
 
-- The review UI on the detail page is a TODO.
-- Search filters (genre, year) and pagination in the UI are a TODO. The backend `/api/discover` already supports them.
-- Scene level trailer search returns `501` until the prototype is integrated.
+- Scene level trailer search returns `501` until the prototype is integrated. The frontend page is ready for the planned response shape.
 - Sentiment based recommendations are not started. Genre based and activity based baselines exist.
-- The TMDb logo still needs to be added to the footer (see https://www.themoviedb.org/about/logos-attribution).
+- The footer uses a text TMDB badge. Swap in the official TMDb logo file (see https://www.themoviedb.org/about/logos-attribution).
+- Local mode has no password reset or Google sign-in.
 
 ## Troubleshooting
 
