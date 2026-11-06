@@ -321,7 +321,7 @@ Add each person's name before starting.
 | 1. App foundation | config, tmdb service, cache, CORS, deployment | layout, routing, API client | |
 | 2. Discovery and search | search, discover, details, trending | Home, Search, Detail | |
 | 3. Accounts and personal features | auth, reviews, favorites, watchlist, watched | Login, MyLists, review UI | |
-| 4. Recommendations | recommendations router | recommendation rows, "For you" tab | |
+| 4. Recommendations | recommendations router | recommendation rows, "For you" tab | Lara |
 | 5. Scene level trailer search | trailer_search router (placeholder) | search UI with timestamped embed | |
 
 ## Known gaps
