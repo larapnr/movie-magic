@@ -36,6 +36,10 @@ A website for discovering movies and TV shows, viewing details, writing reviews,
 - Save titles to Favorites, Watchlist, or Watched.
 - "YOLO" page: get a random title with its trailer.
 - Recommendations based on genre and on the genres of your saved titles.
+- Customize your profile with a bio and favorite movie genres.
+- View other users' public profiles.
+- Send, accept, and decline friend requests.
+- View your friends list and remove friends.
 
 ### Optional: Scene Finder (scene level trailer search)
 
@@ -320,7 +324,7 @@ Add each person's name before starting.
 | --- | --- | --- | --- |
 | 1. App foundation | config, tmdb service, cache, CORS, deployment | layout, routing, API client | |
 | 2. Discovery and search | search, discover, details, trending | Home, Search, Detail | |
-| 3. Accounts and personal features | auth, reviews, favorites, watchlist, watched | Login, MyLists, review UI | |
+| 3. Accounts and personal features | auth, reviews, favorites, watchlist, watched | Login, MyLists, review UI | Nomunaa |
 | 4. Recommendations | recommendations router | recommendation rows, "For you" tab | Lara |
 | 5. Scene level trailer search | trailer_search router (placeholder) | search UI with timestamped embed | |
 
