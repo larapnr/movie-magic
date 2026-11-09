@@ -34,11 +34,23 @@ function UserMenu({ user, logout }) {
       {open && (
         <div className="absolute right-0 z-30 mt-2 w-56 overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900 shadow-xl">
           <div className="border-b border-neutral-800 px-4 py-3">
-            <p className="truncate text-sm font-medium">{user.displayName}</p>
+            <Link
+              to={`/users/${user.uid}`}
+              onClick={() => setOpen(false)}
+              className="block truncate text-sm font-medium transition hover:text-amber-400 hover:underline"
+            >
+              {user.displayName}
+            </Link>
             <p className="truncate text-xs text-neutral-500">{user.email}</p>
           </div>
           <Link to="/my-lists" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm hover:bg-neutral-800">
             My lists
+          </Link>
+          <Link to="/profile" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm hover:bg-neutral-800">
+            My Profile
+          </Link>
+          <Link to="/friends" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm hover:bg-neutral-800">
+            Friends
           </Link>
           <Link to="/my-lists?tab=for-you" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm hover:bg-neutral-800">
             For you
@@ -134,6 +146,12 @@ export default function Navbar() {
               <>
                 <NavLink to="/my-lists" className={navClass}>
                   My lists
+                </NavLink>
+                <NavLink to="/profile" className={navClass}>
+                  My Profile
+                </NavLink>
+                <NavLink to="/friends" className={navClass}>
+                  Friends
                 </NavLink>
                 <p className="px-3 pt-2 text-xs text-neutral-500">Signed in as {user.email}</p>
                 <button onClick={logout} className="px-3 py-1.5 text-left text-sm text-neutral-400">

@@ -52,6 +52,32 @@ export const localSignup = (body) => api.post("/api/auth/signup", body).then((r)
 export const localLogin = (body) => api.post("/api/auth/login", body).then((r) => r.data);
 export const getMe = () => get("/api/auth/me");
 
+// Profile
+export const getProfile = () => get("/api/auth/profile");
+export const updateProfile = (profileData) => api.put("/api/auth/profile", profileData).then((r) => r.data);
+export const getPublicProfile = (uid) =>
+  get(`/api/auth/users/${uid}/profile`);
+
+// Friends
+
+export const sendFriendRequest = (uid) =>
+  api.post(`/api/auth/friends/request/${uid}`).then((r) => r.data);
+
+export const getIncomingFriendRequests = () =>
+  get("/api/auth/friends/requests/incoming");
+
+export const getOutgoingFriendRequests = () =>
+  get("/api/auth/friends/requests/outgoing");
+
+export const respondToFriendRequest = (uid, accept) =>
+  api.post(`/api/auth/friends/respond/${uid}`, { accept }).then((r) => r.data);
+
+export const getFriends = () =>
+  get("/api/auth/friends");
+
+export const removeFriend = (uid) =>
+  api.delete(`/api/auth/friends/${uid}`).then((r) => r.data);
+
 // Reviews
 export const getReviews = (mediaType, id) => get(`/api/reviews/${mediaType}/${id}`);
 export const getReviewSummary = (mediaType, id) => get(`/api/reviews/${mediaType}/${id}/summary`);

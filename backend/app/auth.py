@@ -1,18 +1,20 @@
-from fastapi import Header, HTTPException
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from .config import settings
 
+bearer_scheme = HTTPBearer()
 
-def current_user(authorization: str | None = Header(default=None)) -> dict:
+def current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
+) -> dict:
     """FastAPI dependency. Verifies 'Authorization: Bearer <token>'.
 
     Firebase mode: the token is a Firebase ID token.
     Local mode: the token comes from POST /api/auth/login or /api/auth/signup.
     Returns {"uid", "email", "name"}.
     """
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing bearer token")
-    token = authorization.split(" ", 1)[1]
+    token = credentials.credentials
 
     if not settings.use_firebase:
         from .local_auth import verify_token

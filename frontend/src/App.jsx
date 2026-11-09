@@ -9,9 +9,12 @@ import Search from "./pages/Search";
 import Detail from "./pages/Detail";
 import Login from "./pages/Login";
 import MyLists from "./pages/MyLists";
+import Profile from "./pages/Profile";
 import Yolo from "./pages/Yolo";
 import SceneFinder from "./pages/SceneFinder";
 import NotFound from "./pages/NotFound";
+import PublicProfile from "./pages/PublicProfile";
+import Friends from "./pages/Friends";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -42,6 +45,19 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/users/:uid"
+            element={<PublicProfile />}
+          />
+          <Route path="/friends" element={<Friends />} />
           <Route path="/:mediaType/:id" element={<Detail />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
