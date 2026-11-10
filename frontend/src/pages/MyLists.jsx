@@ -6,7 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { MediaGrid } from "../components/MediaRow";
 import { Message, Segmented, btn } from "../components/ui";
-import { LISTS, useLists } from "../hooks";
+import { LISTS, useGenres, useLists } from "../hooks";
 
 const TABS = [...LISTS.map((l) => ({ key: l.key, label: l.label })), { key: "for-you", label: "For you" }];
 const EMPTY = {
@@ -18,6 +18,7 @@ const EMPTY = {
 function ForYou() {
   const { user } = useAuth();
   const [type, setType] = useState("movie");
+  const { byId } = useGenres(type);
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["forYou", user?.uid, type],
     queryFn: () => getMyRecommendations(type),
@@ -27,7 +28,13 @@ function ForYou() {
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-neutral-400">Highly rated picks from the genres you save most.</p>
+        <p className="text-sm text-neutral-400">
+          {data?.based_on?.liked_genres?.length
+            ? `Based on what you save and rate: ${data.based_on.liked_genres.map((g) => byId[g]).filter(Boolean).join(", ")}`
+            : "Picks based on what you save and how you rate it."}
+          {data?.based_on?.avoided_genres?.length > 0 &&
+            ` · skipping ${data.based_on.avoided_genres.map((g) => byId[g]).filter(Boolean).join(", ")}`}
+        </p>
         <Segmented
           label="Recommendation type"
           value={type}
@@ -41,7 +48,7 @@ function ForYou() {
       {isError ? (
         error?.response?.status === 404 ? (
           <Message title="Nothing to go on yet" action={<Link to="/browse" className={btn.primary}>Find something to save</Link>}>
-            Save a few titles to Favorites, Watchlist or Watched and we'll recommend more like them.
+            Save a few titles or rate them with stars and we'll recommend more like them.
           </Message>
         ) : (
           <Message title="Couldn't load recommendations" tone="error">
@@ -49,7 +56,12 @@ function ForYou() {
           </Message>
         )
       ) : (
-        <MediaGrid items={data?.results} mediaType={type} loading={isLoading} />
+        <MediaGrid
+          items={data?.results}
+          mediaType={type}
+          loading={isLoading}
+          renderFooter={(item) => item.reason && <p className="mt-1 text-xs text-amber-300/80">{item.reason}</p>}
+        />
       )}
     </>
   );
