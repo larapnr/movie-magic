@@ -27,8 +27,11 @@ def now_iso() -> str:
 class FirestoreStore:
     def _db(self):
         from .db import get_db
-
         return get_db()
+
+    def user_by_uid(self, uid: str) -> dict | None:
+        doc = self._db().collection("users").document(uid).get()
+        return doc.to_dict() if doc.exists else None
 
     @staticmethod
     def _review_id(uid, media_type, tmdb_id):
@@ -87,6 +90,15 @@ class FirestoreStore:
             self._item_id(uid, list_name, media_type, tmdb_id)
         ).delete()
 
+    def get_profile(self, uid: str) -> dict | None:
+        doc = self._db().collection("profiles").document(uid).get()
+        return doc.to_dict() if doc.exists else None
+
+    def put_profile(self, uid: str, data: dict) -> None:
+        self._db().collection("profiles").document(uid).set(
+            data,
+            merge=True
+        )
 
 class SqliteStore:
     SCHEMA = """
@@ -119,6 +131,18 @@ class SqliteStore:
         genre_ids TEXT NOT NULL DEFAULT '[]',
         added_at TEXT NOT NULL,
         PRIMARY KEY (uid, list_name, media_type, tmdb_id)
+    );
+    CREATE TABLE IF NOT EXISTS profiles (
+        uid TEXT PRIMARY KEY,
+        bio TEXT NOT NULL DEFAULT '',
+        favorite_genres TEXT NOT NULL DEFAULT '[]'
+    );
+    CREATE TABLE IF NOT EXISTS friendships (
+    requester_uid TEXT NOT NULL,
+    receiver_uid TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (requester_uid, receiver_uid)
     );
     CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
     """
@@ -248,6 +272,120 @@ class SqliteStore:
                 (secrets.token_hex(32),),
             )
             return self._conn.execute("SELECT value FROM meta WHERE key = 'auth_secret'").fetchone()[0]
+
+    # Profiles
+
+    def get_profile(self, uid: str) -> dict | None:
+        profile = self._one(
+            "SELECT * FROM profiles WHERE uid = ?",
+            (uid,)
+        )
+
+        if profile:
+            profile["favorite_genres"] = json.loads(
+                profile["favorite_genres"]
+            )
+
+        return profile
+
+    def put_profile(self, uid: str, data: dict) -> None:
+        self._write(
+            """
+            INSERT OR REPLACE INTO profiles
+            (uid, bio, favorite_genres)
+            VALUES (?, ?, ?)
+            """,
+            (
+                uid,
+                data["bio"],
+                json.dumps(data["favorite_genres"])
+            )
+        )
+    # Friendships
+
+    def send_friend_request(self, requester_uid: str, receiver_uid: str) -> bool:
+        try:
+            self._write(
+                """
+                INSERT INTO friendships
+                (requester_uid, receiver_uid, status, created_at)
+                VALUES (?, ?, 'pending', ?)
+                """,
+                (requester_uid, receiver_uid, now_iso())
+            )
+            return True
+        except sqlite3.IntegrityError:
+            return False
+
+    def incoming_friend_requests(self, uid: str) -> list[dict]:
+        return self._all(
+            """
+            SELECT * FROM friendships
+            WHERE receiver_uid = ? AND status = 'pending'
+            """,
+            (uid,)
+        )
+
+    def outgoing_friend_requests(self, uid: str) -> list[dict]:
+        return self._all(
+            """
+            SELECT * FROM friendships
+            WHERE requester_uid = ? AND status = 'pending'
+            """,
+            (uid,)
+        )
+
+
+    def respond_to_friend_request(
+        self, requester_uid: str, receiver_uid: str, accept: bool
+    ) -> bool:
+        if accept:
+            return self._write(
+                """
+                UPDATE friendships
+                SET status = 'accepted'
+                WHERE requester_uid = ?
+                AND receiver_uid = ?
+                AND status = 'pending'
+                """,
+                (requester_uid, receiver_uid)
+            ) > 0
+
+        return self._write(
+            """
+            DELETE FROM friendships
+            WHERE requester_uid = ?
+            AND receiver_uid = ?
+            AND status = 'pending'
+            """,
+            (requester_uid, receiver_uid)
+        ) > 0
+
+
+    def friends(self, uid: str) -> list[dict]:
+        return self._all(
+            """
+            SELECT * FROM friendships
+            WHERE status = 'accepted'
+            AND (requester_uid = ? OR receiver_uid = ?)
+            """,
+            (uid, uid)
+        )
+
+
+    def remove_friend(self, uid: str, other_uid: str) -> bool:
+        return self._write(
+            """
+            DELETE FROM friendships
+            WHERE status = 'accepted'
+            AND (
+                (requester_uid = ? AND receiver_uid = ?)
+                OR
+                (requester_uid = ? AND receiver_uid = ?)
+            )
+            """,
+            (uid, other_uid, other_uid, uid)
+        ) > 0
 
 
 @lru_cache

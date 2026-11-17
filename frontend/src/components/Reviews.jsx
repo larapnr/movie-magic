@@ -77,8 +77,18 @@ function ReviewCard({ review, mine, onEdit, onDelete }) {
           </span>
           <div>
             <p className="text-sm font-medium">
-              {review.display_name}
-              {mine && <span className="ml-2 rounded bg-amber-400/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-300">You</span>}
+              <Link
+                to={`/users/${review.uid}`}
+                className="transition hover:text-amber-400 hover:underline"
+              >
+                {review.display_name || "Movie Magic User"}
+              </Link>
+
+              {mine && (
+                <span className="ml-2 rounded bg-amber-400/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-300">
+                  You
+                </span>
+              )}
             </p>
             <p className="text-xs text-neutral-500">
               {fmtDate(review.created_at)}
