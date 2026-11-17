@@ -96,6 +96,10 @@ export const removeFromList = (list, mediaType, id) =>
 export const getGenreRecommendations = (genre, type = "movie") =>
   get("/api/recommendations/genre", { genre, type });
 export const getMyRecommendations = (type = "movie") => get("/api/recommendations/me", { type });
+export const getMoods = () => get("/api/recommendations/moods");
+// Pass { mood: "cozy" } or { feeling: "I had a long day" }
+export const getMoodRecommendations = ({ mood, feeling }, type = "movie") =>
+  get("/api/recommendations/mood", { mood, feeling, type });
 
 // Scene Finder
 export const searchTrailerScenes = (q) => get("/api/trailer-search", { q });

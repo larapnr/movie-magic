@@ -20,6 +20,8 @@ Protected endpoints need the header `Authorization: Bearer <token>`: a Firebase 
 | GET | /api/reviews/{type}/{id} | | List reviews, newest first |
 | GET | /api/reviews/{type}/{id}/summary | | `{"average": 4.2, "count": 7}` |
 | GET | /api/recommendations/genre | genre, type | Genre based suggestions |
+| GET | /api/recommendations/moods | | `[{key, label, emoji}]` moods for the mood buttons |
+| GET | /api/recommendations/mood | mood or feeling, type, page | TMDb discover JSON plus `mood: {key, label, emoji}`. `feeling` is free text, the backend picks the mood. 422 if neither is given or the mood is unknown |
 | GET | /api/trailer-search | q | Returns 501 until implemented |
 
 ## Accounts (local mode)
@@ -42,7 +44,7 @@ Protected endpoints need the header `Authorization: Bearer <token>`: a Firebase 
 | GET | /api/me/lists/{favorite, watchlist, watched} | | Saved items, newest first |
 | PUT | /api/me/lists/{list}/{type}/{id} | `{title, poster_path, genre_ids}` | Add to list |
 | DELETE | /api/me/lists/{list}/{type}/{id} | | 204, remove from list |
-| GET | /api/recommendations/me | type | Based on genres of saved items, 404 if nothing saved |
+| GET | /api/recommendations/me | type | `{results, based_on: {liked_genres, avoided_genres, seed_title}}`. Uses saved lists plus review stars and review text sentiment; skips disliked genres; each result has a `reason`. 404 if nothing saved or rated |
 
 ## Planned: scene level trailer search
 

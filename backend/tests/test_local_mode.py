@@ -86,13 +86,14 @@ def test_lists_and_recommendations(client, monkeypatch):
     calls = []
 
     async def fake_tmdb(path, params=None):
-        calls.append(params)
+        calls.append((path, params))
         return {"results": [{"id": 603}, {"id": 604}]}
 
     monkeypatch.setattr(recommendations, "tmdb_get", fake_tmdb)
     recs = client.get("/api/recommendations/me", headers=ana).json()
     assert [r["id"] for r in recs["results"]] == [604]  # already saved titles are filtered out
-    assert set(calls[0]["with_genres"].split("|")) <= {"28", "878", "18"}
+    discover = next(p for path, p in calls if path.startswith("/discover"))
+    assert set(discover["with_genres"].split("|")) <= {"28", "878", "18"}
 
     assert client.delete("/api/me/lists/favorite/movie/603", headers=ana).status_code == 204
     assert client.get("/api/me/lists/favorite", headers=ana).json() == []

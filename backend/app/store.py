@@ -60,6 +60,14 @@ class FirestoreStore:
         snap = self._db().collection("reviews").document(self._review_id(uid, media_type, tmdb_id)).get()
         return snap.to_dict() if snap.exists else None
 
+    def reviews_by_user(self, uid: str) -> list[dict]:
+        from google.cloud.firestore_v1.base_query import FieldFilter
+
+        docs = self._db().collection("reviews").where(filter=FieldFilter("uid", "==", uid)).stream()
+        items = [d.to_dict() for d in docs]
+        items.sort(key=lambda r: r["updated_at"], reverse=True)
+        return items
+
     def put_review(self, data: dict) -> None:
         doc_id = self._review_id(data["uid"], data["media_type"], data["tmdb_id"])
         self._db().collection("reviews").document(doc_id).set(data)
@@ -179,6 +187,9 @@ class SqliteStore:
             "SELECT * FROM reviews WHERE uid = ? AND media_type = ? AND tmdb_id = ?",
             (uid, media_type, tmdb_id),
         )
+
+    def reviews_by_user(self, uid):
+        return self._all("SELECT * FROM reviews WHERE uid = ? ORDER BY updated_at DESC", (uid,))
 
     def put_review(self, data):
         self._write(

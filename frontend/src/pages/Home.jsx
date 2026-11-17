@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import MediaRow from "../components/MediaRow";
+import MoodPicker from "../components/MoodPicker";
 import { BACKDROP } from "../components/MediaCard";
 import { Message, Segmented, btn } from "../components/ui";
 import { getGenreRecommendations, getMyRecommendations, getPopular, getTrending, getUpcoming } from "../api/client";
@@ -100,6 +101,8 @@ export default function Home() {
           }
         />
       )}
+
+      <MoodPicker />
 
       <MediaRow
         title="Trending"
