@@ -10,6 +10,7 @@ import { BACKDROP, IMG_LARGE, LOGO, PROFILE, Poster } from "../components/MediaC
 import { Message, btn } from "../components/ui";
 import { LISTS, useLists } from "../hooks";
 import NotFound from "./NotFound";
+import TrailerMomentSearch from "../components/TrailerMomentSearch";
 
 const region = () => {
   const r = (navigator.language || "").split("-")[1];
@@ -117,6 +118,8 @@ export default function Detail() {
     enabled: valid,
   });
 
+  const [trailerStart, setTrailerStart] = useState(undefined);
+
   if (!valid) return <NotFound />;
   if (isLoading)
     return (
@@ -222,7 +225,10 @@ export default function Detail() {
           <div className="aspect-video max-w-4xl overflow-hidden rounded-xl bg-black">
             <iframe
               className="h-full w-full"
-              src={`https://www.youtube-nocookie.com/embed/${trailer.key}`}
+              key={`${trailer.key}-${trailerStart ?? "0"}`}
+              src={`https://www.youtube-nocookie.com/embed/${trailer.key}?rel=0${
+                trailerStart != null ? `&start=${trailerStart}` : ""
+              }`}
               title={`${title} trailer`}
               allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
@@ -232,6 +238,14 @@ export default function Detail() {
           <p className="text-sm text-neutral-500">No trailer available.</p>
         )}
       </section>
+
+      {trailer && (
+        <TrailerMomentSearch
+          title={title}
+          youtubeKey={trailer.key}
+          onSeek={setTrailerStart}
+        />
+      )}
 
       {cast.length > 0 && (
         <section className="mt-10">
