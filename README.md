@@ -9,6 +9,7 @@ A website for discovering movies and TV shows, viewing details, writing reviews,
 ## Contents
 
 - [Features](#features)
+- [Moment in this trailer](#moment-in-this-trailer-tanuumathe)
 - [Prerequisites](#prerequisites)
 - [Setup](#setup)
 - [Running the app](#running-the-app)
@@ -44,6 +45,17 @@ A website for discovering movies and TV shows, viewing details, writing reviews,
 ### Optional: Scene Finder (scene level trailer search)
 
 Search for a moment using a text description, for example "car chase in the rain". It will first search 2 to 3 selected trailers, not full movies, then return a matching timestamp and play that part of the trailer. The backend route exists as a placeholder and returns `501` until the prototype is integrated.
+
+### Moment in this trailer (tanuumathe)
+
+On a title page, under the trailer, describe a moment and press Find. The home page is unchanged.
+
+- A spoken line is matched against the trailer captions, and the player jumps to that line.
+- If the trailer has no captions, or the words describe something you see, frames from the trailer are scored on your machine and the closest frame is used.
+- Every match plays for 6 seconds. The result shows the time range, and **Play these 6 seconds** starts the YouTube trailer there.
+
+The request is `GET /api/trailer-search`. Picture search needs `yt-dlp`, `onnxruntime`, and `tokenizers` installed in the backend virtualenv. `HF_TOKEN` in `backend/.env` is used once to download the CLIP model from Hugging Face. That token stays out of git.
+
 
 ## Prerequisites
 
@@ -111,6 +123,7 @@ Open `backend/.env` and fill it in:
 | `AUTH_MODE` | `auto` (default), `firebase` or `local` | `auto` |
 | `LOCAL_DB_PATH` | SQLite file used in local mode | `./movie_magic.db` |
 | `AUTH_SECRET` | Optional secret for local login tokens. Empty = generated and stored in the DB | |
+| `HF_TOKEN` | Hugging Face token. Used once to download the picture-search model. Do not commit it. | `hf_...` |
 
 ### 5. Frontend
 
@@ -191,6 +204,7 @@ movie-magic/
     src/
       api/client.js         Axios client, one function per endpoint, attaches the auth token
       components/           Navbar, Footer, MediaCard, MediaRow (row + grid), Reviews, ProtectedRoute, ui (stars, buttons, skeletons)
+      components/TrailerMomentSearch.jsx   Moment search under the trailer (tanuumathe)
       context/              AuthContext (Firebase or local sign-in), ToastContext
       hooks.js              useGenres, useLists and small helpers
       pages/                Home, Browse, Search, Detail, Login, MyLists, Yolo, SceneFinder, NotFound
@@ -206,6 +220,7 @@ movie-magic/
       local_auth.py         Local mode password hashing and signed tokens
       models.py             Request models and enums
       services/             tmdb.py (cached TMDb client), cache.py
+      services/trailer_moments.py   Spoken and picture search for one trailer (tanuumathe)
       routers/              account (local sign-in), search, details, trending, yolo, reviews,
                             favorites, recommendations, trailer_search
     tests/                  pytest tests
@@ -326,11 +341,12 @@ Add each person's name before starting.
 | 2. Discovery and search | search, discover, details, trending | Home, Search, Detail | |
 | 3. Accounts and personal features | auth, reviews, favorites, watchlist, watched | Login, MyLists, review UI | Nomunaa |
 | 4. Recommendations | recommendations router | recommendation rows, "For you" tab | Lara |
-| 5. Scene level trailer search | trailer_search router (placeholder) | search UI with timestamped embed | |
+| 5. Scene level trailer search | trailer_search router (placeholder) | search UI with timestamped embed | tanuumathe |
 
 ## Known gaps
 
 - Scene level trailer search returns `501` until the prototype is integrated. The frontend page is ready for the planned response shape.
+- Moment search on the title page is implemented by tanuumathe (`GET /api/trailer-search`). It plays a 6-second window from a spoken line or from a matched frame.
 - Sentiment based recommendations are not started. Genre based and activity based baselines exist.
 - The footer uses a text TMDB badge. Swap in the official TMDb logo file (see https://www.themoviedb.org/about/logos-attribution).
 - Local mode has no password reset or Google sign-in.
@@ -346,6 +362,9 @@ Add each person's name before starting.
 | `Could not load the default credentials` | `FIREBASE_SERVICE_ACCOUNT` is empty or points to a missing file. |
 | Google sign-in popup fails | Enable Google in Firebase Authentication, and add your domain under Authentication > Settings > Authorized domains. |
 | `uvicorn: command not found` | Activate the virtual environment first: `source .venv/bin/activate`. |
+| Find shows a long transcript error and no time | That trailer has no captions. Picture search still needs `yt-dlp` in the backend venv (`pip install yt-dlp`), then restart uvicorn. |
+| Find says the model is not supported by `hf-inference` | Picture scoring runs locally. `pip install onnxruntime tokenizers`, set `HF_TOKEN` in `backend/.env`, and restart the API. |
+| `Address already in use` on port 8000 | A previous API is still running. `kill -9 $(lsof -tiTCP:8000 -sTCP:LISTEN)`, then start uvicorn again. Stop it with Ctrl+C. |
 
 ## Commit history
 
@@ -353,6 +372,7 @@ Earlier commits on `main`, newest first:
 
 | Commit | Author | Date | Summary |
 | --- | --- | --- | --- |
+| `8304077` | tanuumathe | 2026-11-20 | Search a trailer by spoken line or picture and play that 6-second window. Merged to `main`. |
 | `1da828f` | Upasana | 2026-11-04 | Add backend and frontend app code with API contract. Added the FastAPI backend (routers, TMDb client, Firebase auth, tests), the React + Vite frontend (pages, components, auth context, API client), `docs/API_CONTRACT.md`, and `.gitignore`. Merged the per-folder READMEs into the root README. |
 | `0d2f686` | larapnr | 2026-10-12 | Add project folders and README documentation. Wrote the project plan, feature list, team workflow, proposed routes, data formats, and the `backend/`, `frontend/`, and `docs/` READMEs. |
 | `8aec2d6` | larapnr | 2026-10-12 | Create .DS_Store. A macOS system file, now ignored by `.gitignore`. |
