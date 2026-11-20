@@ -1,20 +1,38 @@
-from fastapi import APIRouter, HTTPException, Query
+import logging
+
+from fastapi import APIRouter, Query
+
+from app.services.trailer_moments import search_moments
 
 router = APIRouter(prefix="/api/trailer-search", tags=["trailer-search"])
+log = logging.getLogger("uvicorn.error")
 
 
 @router.get("")
-async def trailer_search(q: str = Query(min_length=1)):
-    """Scene level trailer search (feature area 5).
-
-    Placeholder until the existing prototype is wired in. Planned response shape:
-    {
-      "query": "car chase in the rain",
-      "matches": [
-        {"tmdb_id": 603, "media_type": "movie", "title": "...", "youtube_key": "...",
-         "start_seconds": 42, "end_seconds": 51, "score": 0.83}
-      ]
-    }
-    The frontend can open the embed at a moment with ?start=<start_seconds>.
-    """
-    raise HTTPException(status_code=501, detail="Trailer scene search not implemented yet")
+def trailer_search(
+    q: str = Query(min_length=1),
+    youtube_key: str | None = None,
+    title: str | None = None,
+):
+    try:
+        result = search_moments(q, youtube_key=youtube_key, title=title)
+    except Exception as exc:
+        result = {
+            "query": q,
+            "matches": [],
+            "reason": str(exc)[:300],
+            "youtube_key": youtube_key,
+            "mode": "none",
+        }
+    match = (result.get("matches") or [None])[0]
+    if match:
+        log.info(
+            "trailer-search %r -> %s %ss-%ss",
+            q,
+            result.get("mode"),
+            match.get("start_seconds"),
+            match.get("end_seconds"),
+        )
+    else:
+        log.info("trailer-search %r -> no match: %s", q, result.get("reason"))
+    return result

@@ -118,7 +118,12 @@ export default function Detail() {
     enabled: valid,
   });
 
-  const [trailerStart, setTrailerStart] = useState(undefined);
+  const [trailerClip, setTrailerClip] = useState(null);
+  const playTrailerClip = (start, end) => {
+    const s = Math.max(0, Math.floor(Number(start) || 0));
+    const e = Math.max(s + 1, Math.floor(Number(end) || s + 6));
+    setTrailerClip({ start: s, end: e, token: Date.now() });
+  };
 
   if (!valid) return <NotFound />;
   if (isLoading)
@@ -223,12 +228,10 @@ export default function Detail() {
         <h2 className="mb-3 text-xl font-semibold">Trailer</h2>
         {trailer ? (
           <div className="aspect-video max-w-4xl overflow-hidden rounded-xl bg-black">
-            <iframe
+            <iframe id="trailer-player" key={trailerClip ? trailerClip.token : "trailer"}
               className="h-full w-full"
-              key={`${trailer.key}-${trailerStart ?? "0"}`}
-              src={`https://www.youtube-nocookie.com/embed/${trailer.key}?rel=0${
-                trailerStart != null ? `&start=${trailerStart}` : ""
-              }`}
+             
+              src={`https://www.youtube.com/embed/${trailer.key}?rel=0&modestbranding=1&playsinline=1&enablejsapi=1${trailerClip ? `&autoplay=1&start=${trailerClip.start}&end=${trailerClip.end}` : ''}`}
               title={`${title} trailer`}
               allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
@@ -243,7 +246,7 @@ export default function Detail() {
         <TrailerMomentSearch
           title={title}
           youtubeKey={trailer.key}
-          onSeek={setTrailerStart}
+          onSeek={playTrailerClip}
         />
       )}
 

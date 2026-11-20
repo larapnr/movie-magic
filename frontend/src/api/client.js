@@ -102,6 +102,6 @@ export const getMoodRecommendations = ({ mood, feeling }, type = "movie") =>
   get("/api/recommendations/mood", { mood, feeling, type });
 
 // Scene Finder
-export const searchTrailerScenes = (q) => get("/api/trailer-search", { q });
+export const searchTrailerScenes = (query, extra = {}) => api.get('/api/trailer-search', { params: { q: query, youtube_key: extra.youtube_key, title: extra.title }, timeout: 90000 }).then((res) => res.data);
 
 export default api;

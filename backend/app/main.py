@@ -1,3 +1,4 @@
+from app.services.trailer_moments import search_moments
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
