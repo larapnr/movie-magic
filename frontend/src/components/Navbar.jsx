@@ -4,8 +4,6 @@ import { useAuth } from "../context/AuthContext";
 
 const NAV = [
   { to: "/browse", label: "Browse" },
-  { to: "/yolo", label: "YOLO" },
-  { to: "/scene-finder", label: "Scene Finder" },
 ];
 
 const navClass = ({ isActive }) =>

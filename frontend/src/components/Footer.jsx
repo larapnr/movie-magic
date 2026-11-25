@@ -6,8 +6,6 @@ export default function Footer() {
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-6 text-xs text-neutral-500 sm:flex-row">
         <nav className="flex gap-4">
           <Link to="/browse" className="hover:text-white">Browse</Link>
-          <Link to="/yolo" className="hover:text-white">YOLO</Link>
-          <Link to="/scene-finder" className="hover:text-white">Scene Finder</Link>
         </nav>
         {/* TMDb requires this attribution. https://www.themoviedb.org/about/logos-attribution */}
         <a href="https://www.themoviedb.org" target="_blank" rel="noreferrer" className="flex items-center gap-2 hover:text-neutral-300">
